@@ -1,74 +1,77 @@
-import { Image, StyleSheet, Platform } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Button, StyleSheet, Alert } from 'react-native';
+import { setAudioModeAsync, useAudioPlayer } from 'expo-audio';
 
-import { HelloWave } from '@/components/HelloWave';
-import ParallaxScrollView from '@/components/ParallaxScrollView';
-import { ThemedText } from '@/components/ThemedText';
-import { ThemedView } from '@/components/ThemedView';
+const AudioPlayer = ({ source }: { source: { uri: string } }) => {
+  const player = useAudioPlayer(source); // Create player instance
+
+  useEffect(() => {
+    const playAudio = async () => {
+      try {
+        await player.play(); // Start playback
+      } catch (error) {
+        console.error('[AudioPlayer] Playback Error:', error);
+        Alert.alert('Playback Error', 'An error occurred while playing the audio.');
+      }
+    };
+
+    playAudio();
+
+    return () => {
+      const stopAudio = async () => {
+        try {
+          await player.remove(); // Stop playback
+        } catch (error) {
+          console.error('[AudioPlayer] Cleanup Error:', error);
+        }
+      };
+      stopAudio();
+    };
+  }, [player]);
+
+  return null; // No visible UI for the player
+};
 
 export default function HomeScreen() {
+  const [audioSource, setAudioSource] = useState<{ uri: string } | null>(null);
+
+  useEffect(() => {
+    configureAudioMode('duckOthers');
+  }, []);
+
+  async function configureAudioMode(mode: 'duckOthers' | 'mixWithOthers') {
+    try {
+      await setAudioModeAsync({
+        allowsRecording: false,
+        interruptionMode: mode,
+        playsInSilentMode: true,
+        shouldPlayInBackground: false,
+      });
+    } catch (error) {
+      console.error('Error configuring audio mode:', error);
+    }
+  }
+
+  const handlePlayAudio = () => {
+    // Example URI, replace with your actual audio file URI
+    const exampleAudioUri = 'https://www.sample-videos.com/audio/mp3/crowd-cheering.mp3';
+    setAudioSource({ uri: exampleAudioUri });
+  };
+
   return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
-      headerImage={
-        <Image
-          source={require('@/assets/images/partial-react-logo.png')}
-          style={styles.reactLogo}
-        />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Welcome!</ThemedText>
-        <HelloWave />
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 1: Try it</ThemedText>
-        <ThemedText>
-          Edit <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> to see changes.
-          Press{' '}
-          <ThemedText type="defaultSemiBold">
-            {Platform.select({
-              ios: 'cmd + d',
-              android: 'cmd + m',
-              web: 'F12'
-            })}
-          </ThemedText>{' '}
-          to open developer tools.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 2: Explore</ThemedText>
-        <ThemedText>
-          Tap the Explore tab to learn more about what's included in this starter app.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 3: Get a fresh start</ThemedText>
-        <ThemedText>
-          When you're ready, run{' '}
-          <ThemedText type="defaultSemiBold">npm run reset-project</ThemedText> to get a fresh{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> directory. This will move the current{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> to{' '}
-          <ThemedText type="defaultSemiBold">app-example</ThemedText>.
-        </ThemedText>
-      </ThemedView>
-    </ParallaxScrollView>
+    <View style={styles.container}>
+      <Button title="Play Audio" onPress={handlePlayAudio} />
+      {audioSource && <AudioPlayer source={audioSource} />}
+    </View>
+
+    
   );
 }
 
 const styles = StyleSheet.create({
-  titleContainer: {
-    flexDirection: 'row',
+  container: {
+    flex: 1,
+    justifyContent: 'center',
     alignItems: 'center',
-    gap: 8,
-  },
-  stepContainer: {
-    gap: 8,
-    marginBottom: 8,
-  },
-  reactLogo: {
-    height: 178,
-    width: 290,
-    bottom: 0,
-    left: 0,
-    position: 'absolute',
   },
 });
